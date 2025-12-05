@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop</title>
+    <!-- Lade Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Konfigurieren der Inter-Schriftart */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a033f; /* Sehr dunkles Violett */
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+                repeating-linear-gradient(0deg, #2b064e, #2b064e 1px, transparent 1px, transparent 40px),
+                repeating-linear-gradient(90deg, #2b064e, #2b064e 1px, transparent 1px, transparent 40px);
+            background-size: 100% 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Neon-Glow Effekt für Haupt-Elemente */
+        .neon-glow {
+            box-shadow: 0 0 10px #e94560, 0 0 20px #e94560, 0 0 40px rgba(233, 69, 96, 0.4);
+        }
+
+        /* Hover-Effekt für Buttons */
+        .btn-neon {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 5px #e94560;
+        }
+        .btn-neon:hover {
+            box-shadow: 0 0 15px #e94560, 0 0 30px #e94560;
+            transform: translateY(-2px);
+        }
+
+        /* Animation für das "Flug-zum-Warenkorb"-Element */
+        @keyframes flyToCart {
+            from {
+                opacity: 1;
+                transform: translate(0, 0) scale(1);
+            }
+            to {
+                opacity: 0.5;
+                transform: translate(var(--dx), var(--dy)) scale(0.1);
+            }
+        }
+
+        .flying-item {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            background-color: #e94560;
+            border-radius: 50%;
+            z-index: 100;
+            pointer-events: none;
+            animation: flyToCart 0.8s ease-in;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-dark': '#2c0850', /* Haupt-Karten-Hintergrund */
+                        'secondary-dark': '#3c1860', /* Leicht hellerer Hintergrund */
+                        'neon-pink': '#e94560', /* Haupt-Akzentfarbe */
+                        'neon-blue': '#4d96ff', /* Sekundär-Akzentfarbe */
+                        'text-light': '#f0f0f0', 
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="p-4 sm:p-8">
+
+    <!-- Hauptcontainer: Hält den Login-Bereich oder den Shop -->
+    <div id="main-app-container" class="w-full max-w-6xl">
+
+        <!-- Header (Immer sichtbar) -->
+        <header id="header-bar" class="w-full bg-secondary-dark/80 backdrop-blur-sm p-4 rounded-full flex justify-between items-center fixed top-4 left-1/2 -translate-x-1/2 max-w-4xl z-40 shadow-xl border border-neon-pink/30 transition-opacity duration-500" style="opacity: 0;">
+             <h1 class="text-xl sm:text-2xl font-extrabold text-neon-pink flex items-center">
+                <span class="bg-neon-blue/20 text-neon-blue p-1 px-3 rounded-full mr-3 text-sm font-mono">V1</span>
+                Paper Shop
+            </h1>
+            <div id="auth-area" class="flex items-center space-x-4">
+                <span id="user-display" class="text-text-light font-medium bg-secondary-dark p-2 rounded-full px-4 text-sm hidden"></span>
+                <button id="auth-button" class="btn-neon bg-neon-pink hover:bg-neon-pink/80 text-primary-dark font-bold py-2 px-6 rounded-full transition duration-300 shadow-lg shadow-neon-pink/50">
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- 1. LOGIN-BILDSCHIRM (Standardmäßig angezeigt) -->
+        <div id="login-view" class="flex flex-col items-center justify-center min-h-[80vh] transition-opacity duration-500">
+            <div class="bg-primary-dark p-8 sm:p-12 rounded-[3rem] shadow-2xl border-4 border-neon-pink/50 neon-glow text-center w-full max-w-md">
+                <h2 class="text-4xl font-extrabold text-neon-pink mb-6">Zugriff erforderlich</h2>
+                <p class="text-text-light mb-8">Bitte melde dich an, um den Shop zu betreten.</p>
+                <!-- NEU: Eingabefeld für den Namen hinzugefügt -->
+                <input type="text" id="login-name" placeholder="Dein Name" 
+                       class="w-full p-4 mb-4 rounded-xl bg-secondary-dark text-text-light border border-neon-blue focus:outline-none focus:ring-4 focus:ring-neon-blue/50 transition" 
+                       value="">
+                <input type="email" id="login-email" placeholder="Deine E-Mail (z.B. user@gmail.com)" 
+                       class="w-full p-4 mb-6 rounded-xl bg-secondary-dark text-text-light border border-neon-blue focus:outline-none focus:ring-4 focus:ring-neon-blue/50 transition" 
+                       value="">
+                <button id="start-shopping-btn" class="btn-neon w-full bg-neon-pink hover:bg-neon-pink/90 text-primary-dark font-bold py-4 rounded-2xl text-lg">
+                    Shop betreten
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. SHOP INHALT (Nach Login angezeigt) -->
+        <div id="shop-view" class="hidden pt-28 pb-10 transition-opacity duration-500">
+             
+            <!-- Produktliste -->
+            <main id="product-list" class="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10">
+                <!-- Produkte werden hier per JavaScript eingefügt -->
+            </main>
+
+            <!-- Warenkorb Zusammenfassung/Checkout unten -->
+            <div class="mt-16 flex justify-center">
+                <div class="w-full max-w-lg p-6 rounded-3xl bg-primary-dark border-4 border-neon-blue/50 neon-glow text-center">
+                    <h2 class="text-2xl font-bold text-text-light mb-4 flex items-center justify-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-neon-blue" viewBox="0 0 24 24" fill="currentColor"><path d="M10 19.5c0 .829-.672 1.5-1.5 1.5s-1.5-.671-1.5-1.5c0-.828.672-1.5 1.5-1.5s1.5.672 1.5 1.5zm3.5-1.5c-.828 0-1.5.671-1.5 1.5s.672 1.5 1.5 1.5 1.5-.671 1.5-1.5c0-.828-.672-1.5-1.5-1.5zm1.336-5l1.977-7h-16.891l2.429 7zm.296-2h-10.742l-1.03-3h12.793z"/></svg>
+                        Warenkorb Übersicht
+                    </h2>
+                    
+                    <!-- Hier landet der fliegende Gegenstand -->
+                    <div id="cart-summary-target" class="text-text-muted text-lg font-medium mb-4">
+                        <span id="cart-summary">0 Artikel (Gesamt: 0.00 €)</span>
+                    </div>
+
+                    <button id="checkout-button" class="btn-neon w-full bg-neon-blue hover:bg-neon-blue/80 text-primary-dark font-bold py-3 rounded-xl text-lg disabled:opacity-30 disabled:shadow-none" disabled>
+                        Zur Kasse gehen
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Bestätigungs Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-80 hidden items-center justify-center z-50 transition-opacity duration-300">
+        <div class="bg-primary-dark p-8 rounded-3xl w-full max-w-md shadow-2xl border-4 border-green-500/50 text-center transform scale-100 transition-all duration-300">
+            <svg class="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h3 class="text-3xl font-bold text-text-light mb-2">Bestellung Übermittelt!</h3>
+            <p id="confirmation-message" class="text-text-muted mb-6">
+                <!-- Dieser Inhalt wird von JS überschrieben -->
+            </p>
+            <button id="close-confirmation-modal" class="btn-neon w-full bg-neon-pink hover:bg-neon-pink/80 text-primary-dark font-bold py-3 rounded-xl transition duration-300">
+                Zurück zum Shop
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // === JavaScript Logik des Shops ===
+
+        // Globale Zustandsvariablen
+        let isLoggedIn = false;
+        let userName = ''; // NEU: Name des Benutzers
+        let userEmail = '';
+        let cart = {}; // Speichert Artikel-ID: Menge
+        
+        // Produkt Definitionen (mit einfachen SVG-Symbolen für die Karten)
+        const products = [
+            { id: 1, name: "Papier Becher", price: 3, description: "Einfach nur cool", icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-text-light" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h10v2h-10zm-3 2h18v2h-18zm2 3h14l-1.5 15h-11z"/></svg>' },
+            { id: 2, name: "Ninja Speer", price: 15, description: "Cool", icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-text-light" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L12 23M12 23L16 19M12 23L8 19M12 3L18 9M12 3L6 9"/></svg>' },
+            { id: 3, name: "Knalltüte", price: 3.50, description: "Gut für Schule", icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-text-light" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-4.418 0-8 3.582-8 8s3.582 8 8 8 8-3.582 8-8-3.582-8-8-8zm0 14c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6zM12 8l-2 4h4l-2 4z"/></svg>' }
+        ];
+
+        // Referenzen auf DOM-Elemente
+        const loginView = document.getElementById('login-view');
+        const shopView = document.getElementById('shop-view');
+        const headerBar = document.getElementById('header-bar');
+        const productList = document.getElementById('product-list');
+        const authButton = document.getElementById('auth-button');
+        const userDisplay = document.getElementById('user-display');
+        const loginNameInput = document.getElementById('login-name'); // NEU: Name-Eingabe Referenz
+        const loginEmailInput = document.getElementById('login-email');
+        const startShoppingBtn = document.getElementById('start-shopping-btn');
+        const cartSummary = document.getElementById('cart-summary');
+        const cartSummaryTarget = document.getElementById('cart-summary-target'); // Das Ziel für die Animation
+        const checkoutButton = document.getElementById('checkout-button');
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const confirmationMessage = document.getElementById('confirmation-message');
+        const closeConfirmationModal = document.getElementById('close-confirmation-modal');
+
+        // Funktion: Produkte rendern
+        function renderProducts() {
+            productList.innerHTML = products.map(product => `
+                <div id="product-${product.id}" class="product-card bg-primary-dark p-6 rounded-3xl shadow-xl transition duration-300 border border-neon-blue/20 hover:border-neon-pink/50 flex flex-col justify-between">
+                    <div class="flex flex-col items-center">
+                        <!-- Produkt Icon -->
+                        <div class="w-24 h-24 bg-secondary-dark rounded-full mb-4 flex items-center justify-center border-4 border-neon-pink/40 shadow-inner">
+                            ${product.icon}
+                        </div>
+                        
+                        <h2 class="text-xl font-bold text-text-light mb-2 text-center">${product.name}</h2>
+                        <p class="text-text-muted text-sm mb-4 text-center">${product.description}</p>
+                        <p class="text-3xl font-extrabold text-neon-pink">${product.price.toFixed(2)} €</p>
+                    </div>
+                    <button data-id="${product.id}" class="add-to-cart-btn btn-neon mt-6 w-full bg-neon-pink hover:bg-neon-pink/80 text-primary-dark font-semibold py-3 rounded-2xl shadow-md">
+                        Zum Warenkorb hinzufügen
+                    </button>
+                </div>
+            `).join('');
+            
+            // Event Listener für "Zum Warenkorb hinzufügen" Buttons hinzufügen
+            document.querySelectorAll('.add-to-cart-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const productId = parseInt(e.target.getAttribute('data-id'));
+                    const productElement = document.getElementById(`product-${productId}`);
+                    addToCart(productId, productElement);
+                });
+            });
+        }
+
+        // Funktion: Artikel zum Warenkorb hinzufügen & Animation ausführen
+        function addToCart(productId, sourceElement) {
+            cart[productId] = (cart[productId] || 0) + 1;
+            updateCartUI();
+            
+            // === ANIMATIONS-LOGIK: Fliegen zum Warenkorb ===
+            const sourceRect = sourceElement.getBoundingClientRect();
+            const targetRect = cartSummaryTarget.getBoundingClientRect();
+            
+            // 1. Das fliegende Element erstellen (ein roter Kreis)
+            const flyingItem = document.createElement('div');
+            flyingItem.classList.add('flying-item', 'shadow-2xl');
+            
+            // Startposition setzen (Mitte des Produkt-Buttons)
+            flyingItem.style.left = `${sourceRect.left + sourceRect.width / 2 - 20}px`;
+            flyingItem.style.top = `${sourceRect.top + sourceRect.height / 2 - 20}px`;
+            
+            document.body.appendChild(flyingItem);
+
+            // 2. Zielkoordinaten berechnen (Mitte des Warenkorb-Ziels)
+            const dx = targetRect.left + targetRect.width / 2 - (sourceRect.left + sourceRect.width / 2);
+            const dy = targetRect.top + targetRect.height / 2 - (sourceRect.top + sourceRect.height / 2);
+
+            // 3. CSS-Variablen für die Animation setzen
+            flyingItem.style.setProperty('--dx', `${dx}px`);
+            flyingItem.style.setProperty('--dy', `${dy}px`);
+
+            // 4. Element nach der Animation entfernen
+            setTimeout(() => {
+                flyingItem.remove();
+            }, 800);
+            
+             // === ENDE ANIMATIONS-LOGIK ===
+        }
+
+        // Funktion: Warenkorb UI aktualisieren
+        function updateCartUI() {
+            const totalItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
+            const totalPrice = Object.keys(cart).reduce((total, id) => {
+                const product = products.find(p => p.id === parseInt(id));
+                return total + (product.price * cart[id]);
+            }, 0);
+
+            cartSummary.textContent = `${totalItems} Artikel (Gesamt: ${totalPrice.toFixed(2)} €)`;
+
+            // Checkout Button aktivieren/deaktivieren
+            checkoutButton.disabled = totalItems === 0;
+        }
+
+        // Funktion: Login-Status und UI-Sichtbarkeit aktualisieren
+        function updateAuthUI() {
+            if (isLoggedIn) {
+                // SHOP-ANSICHT anzeigen
+                loginView.classList.add('hidden');
+                shopView.classList.remove('hidden');
+                
+                // Header anzeigen
+                headerBar.style.opacity = '1';
+
+                authButton.textContent = 'Logout';
+                // Zeige den Benutzernamen an
+                userDisplay.textContent = `Hallo, ${userName}`;
+                userDisplay.classList.remove('hidden');
+            } else {
+                // LOGIN-ANSICHT anzeigen
+                shopView.classList.add('hidden');
+                loginView.classList.remove('hidden');
+                
+                // Header verstecken
+                headerBar.style.opacity = '0';
+                
+                authButton.textContent = 'Login';
+                userDisplay.classList.add('hidden');
+                userDisplay.textContent = '';
+            }
+            updateCartUI();
+        }
+
+        // Event Listener: Login im Startbildschirm
+        startShoppingBtn.addEventListener('click', () => {
+            const name = loginNameInput.value.trim(); // NEU: Name abrufen
+            const email = loginEmailInput.value.trim();
+            
+            // Validierung: Name und gültige E-Mail erforderlich
+            if (name.length > 0 && email && email.includes('@')) {
+                isLoggedIn = true;
+                userName = name; // Name speichern
+                userEmail = email;
+                updateAuthUI();
+            } else {
+                // Fehlerbehandlung
+                // Hier wurde alert() beibehalten, da es eine einfache Fallback-Warnung ist.
+                alert('Bitte gib einen gültigen Namen und eine gültige E-Mail-Adresse ein.'); 
+            }
+        });
+
+        // Event Listener: Haupt-Auth-Button (Logout)
+        authButton.addEventListener('click', () => {
+            if (isLoggedIn) {
+                // Logout-Logik
+                isLoggedIn = false;
+                userEmail = '';
+                userName = ''; // NEU: Name beim Logout leeren
+                cart = {}; // Warenkorb leeren
+                updateAuthUI();
+            } else {
+                // Zur Login-Ansicht scrollen/wechseln
+                updateAuthUI();
+            }
+        });
+        
+        // Event Listener für den Checkout (VERWENDET JETZT GMAIL COMPOSE URL)
+        checkoutButton.addEventListener('click', () => {
+            if (isLoggedIn && Object.keys(cart).length > 0) {
+                // 1. Bestellvorgang Details sammeln
+                let totalPrice = 0;
+                // Füge den Namen zur E-Mail hinzu
+                let bodyContent = `Hallo Timo,\n\nhier ist die Bestellung von Kunde ${userName} (${userEmail}) (#${Date.now().toString().slice(-6)}).\n\n--- Bestelldetails ---\n`;
+
+                Object.keys(cart).forEach(id => {
+                    const product = products.find(p => p.id === parseInt(id));
+                    const count = cart[id];
+                    const itemTotal = product.price * count;
+                    totalPrice += itemTotal;
+                    
+                    // Formatierung für die E-Mail
+                    bodyContent += `- ${count}x ${product.name} (Gesamt: ${itemTotal.toFixed(2)} EUR)\n`;
+                });
+
+                bodyContent += `\n--- Gesamtsumme ---\n${totalPrice.toFixed(2)} EUR\n`;
+                // Aktualisiere die Kontaktinformationen
+                bodyContent += `\nKontakt des Käufers (Antworten Sie an diese Adresse):\nName: ${userName}\nE-Mail: ${userEmail}\n`;
+                bodyContent += `\nViele Grüße,\nDein Paper Shop`;
+
+
+                // Codierung für die URL (Leerzeichen durch %20, Zeilenumbrüche durch %0A)
+                const encodedBody = encodeURIComponent(bodyContent);
+                // Aktualisiere den Betreff mit dem Namen
+                const encodedSubject = encodeURIComponent(`Neue Bestellung von ${userName} (#${Date.now().toString().slice(-6)})`);
+                
+                // Die vom Benutzer angegebene Ziel-E-Mail (Timo)
+                const shopOwnerEmail = 'timo.rusch13@gmail.com'; 
+
+                // NEU: Verwende die GMail Compose URL, um das Webinterface zu öffnen
+                const gmailComposeUrl = `https://mail.google.com/mail/u/0/?view=cm&fs=1&to=${shopOwnerEmail}&su=${encodedSubject}&body=${encodedBody}`;
+
+                // Öffnen in einem neuen Tab/Fenster, um den Benutzer zum GMail-Webinterface zu leiten
+                window.open(gmailComposeUrl, '_blank');
+
+                // 3. Bestätigungs-Modal Text aktualisieren
+                confirmationMessage.innerHTML = `
+                    Das GMail-Webinterface wurde in einem neuen Tab geöffnet, um die Bestelldaten an 
+                    <span class="font-bold text-neon-pink">${shopOwnerEmail}</span> 
+                    zu senden. Bitte schließe den Sendevorgang auf der GMail-Seite ab.
+                `;
+
+                // 4. Bestätigungs-Modal anzeigen
+                confirmationModal.classList.remove('hidden');
+                confirmationModal.classList.add('flex');
+
+                // 5. Warenkorb leeren
+                cart = {};
+                updateCartUI();
+            }
+        });
+
+        // Bestätigungs-Modal schließen
+        closeConfirmationModal.addEventListener('click', () => {
+            confirmationModal.classList.add('hidden');
+            confirmationModal.classList.remove('flex');
+        });
+
+        // Initialisierung des Shops
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+            // Startet immer im ausgeloggten Zustand / Login-Ansicht
+            updateAuthUI(); 
+        });
+
+    </script>
+</body>
+</html>
